@@ -10,7 +10,7 @@ liste_fournisseur_path = Path().cwd() / "liste_fournisseur.txt"
 
 is_running = True
 while is_running:
-    choice = input("\n1: add a supplier \n2: add a bill \n3: edit a bill\n4: exit")
+    choice = input("\n1: add a supplier \n2: add a bill \n3: edit a bill\n4: delete\n5: exit")
 
     #add supplier choice
     if choice.lower() == "supplier":
@@ -83,7 +83,6 @@ while is_running:
                 print(row)
 
                 choix_facture = input("sur quel facture voulez vous modifier (en selectionant le numero de la facture)")
-                print(type(choix_facture))
                 choix_case_a_modifier = input("quel case modifier ? (N_facture, Date, nombre_de_produits, montant_HT, montant_TTC)")
                 new_value = input("new value: ")
                 cursor.execute(f"UPDATE {choix_fournisseur} SET {choix_case_a_modifier}={new_value} WHERE N_facture='{choix_facture}'")
@@ -92,6 +91,30 @@ while is_running:
 
             elif choix_fournisseur not in fourn_split:
                 print("aucun fournisseur a ce nom")
+
+    elif choice.lower() == "delete":
+
+        with open(liste_fournisseur_path, "r") as f_1:
+            fourn = f_1.read()
+            fourn_split = fourn.split()
+
+        print(fourn_split)
+
+        choix_fournisseur = input("sur quel fournisseur voulez supprimer une facture ?")
+
+        if choix_fournisseur in fourn_split:
+            # on recupere les factures existantes dans une variable afin de l afficher
+            cursor.execute(f"SELECT * FROM {choix_fournisseur}")
+            row = cursor.fetchall()
+            print(row)
+
+            choix_facture = input("quel facture voulez vous supprimer ? (en selectionant le numero de la facture)")
+
+            cursor.execute(f"DELETE FROM {choix_fournisseur} WHERE N_facture='{choix_facture}'")
+            conn.commit()
+
+        elif choix_fournisseur not in fourn_split:
+            print("aucun fournisseur a ce nom")
 
     #exit choice
     elif choice.lower() == "exit":
