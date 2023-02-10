@@ -8,70 +8,95 @@ cursor = conn.cursor()
 
 liste_fournisseur_path = Path().cwd() / "liste_fournisseur.txt"
 
+is_running = True
+while is_running:
+    choice = input("\n1: add a supplier \n2: add a bill \n3: edit a bill\n4: exit")
 
-
-
-
-while True:
-    choix = input("voulez vous ajouter un fournisseur ? y/n").lower()
-    if choix in ["y","yes","oui","ok"]:
-        nom_fournisseur=input("quel est le nom du fournisseur ?")
+    #add supplier choice
+    if choice.lower() == "supplier":
+        nom_fournisseur = input("quel est le nom du fournisseur ?")
 
         with open(liste_fournisseur_path, "a") as f_0:
             f_0.write(f"{nom_fournisseur} ")
 
-        cursor.execute(f"CREATE TABLE IF NOT EXISTS {nom_fournisseur}(Date, N_facture, nombre_de_produits, montant_HT, montant_TTC, fichier)")
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS {nom_fournisseur}(N_facture, Date, nombre_de_produits, montant_HT, montant_TTC, fichier)")
         conn.commit()
-    else:
-        break
 
-
-while True:
-    choix_ajouter_facture=input("Voulez vous ajouter une facture ?")
-
-    if choix_ajouter_facture in ["y","yes","oui","ok"]:
-
-        """renvoie une liste de tuples des noms des tables / ex: [('table1',), ('table2'), ('table3')]
-        cependant lorsque je tape "table1" pour y acceder, ca ne marche pas"""
-        # cursor.execute("SELECT name FROM sqlite_master WHERE type ='table'")
-        # conn.commit()
-        # lines = cursor.fetchall()
-        # print(lines)
+    #add bill choice
+    elif choice.lower() == "add bill":
 
         with open(liste_fournisseur_path, "r") as f_1:
             fourn = f_1.read()
-            fourn_split=fourn.split()
+            fourn_split = fourn.split()
 
         print(fourn_split)
 
         choix_fournisseur = input("sur quel fournisseur voulez inserer une facture ?")
         if choix_fournisseur in fourn_split:
-            date=input("quelle est la date de la facture ?")
             num_facture = input("quel est le numero de la facture ?")
+            date = input("quelle est la date de la facture ?")
             n_produit = input("combien de produit la facture contient-elle ?")
             montant_ht = input("quel est le montant de la facture HT ?")
             montant_ttc = input("quel est le montant de la facture TTC ?")
+            print(type(num_facture), type(date), type(n_produit), type(montant_ht), type(montant_ttc))
 
-            cursor.execute(f"INSERT INTO {choix_fournisseur}(Date, N_facture, nombre_de_produits, montant_HT, montant_TTC) VALUES(?,?,?,?,?)", (date, num_facture, n_produit, montant_ht, montant_ttc))
+            cursor.execute(
+                f"INSERT INTO {choix_fournisseur}(N_facture, Date, nombre_de_produits, montant_HT, montant_TTC) VALUES(?,?,?,?,?)",
+                (num_facture, date, n_produit, montant_ht, montant_ttc))
             conn.commit()
 
-            ajouter_fichier=input("voulez vous ajouter un fichier de la facture ?")
-            if ajouter_fichier in ["y","yes","oui","ok"]:
+
+            ajouter_fichier = input("voulez vous ajouter un fichier de la facture ?")
+            if ajouter_fichier in ["y", "yes", "oui", "ok"]:
                 choix_path = input(str("quel est le chemin du fichier a ajouter ?"))
                 my_path = Path(choix_path)
 
                 with open(my_path, "rb") as f:
                     my_file = f.read()
-                    cursor.execute(f"UPDATE {choix_fournisseur} SET fichier=? WHERE N_facture=?",(my_file,num_facture))
+                    cursor.execute(f"UPDATE {choix_fournisseur} SET fichier=? WHERE N_facture=?",
+                                   (my_file, num_facture))
                     conn.commit()
+                    conn.close()
 
             else:
-                break
+                print("vous n'ajoutez pas de fichier")
 
 
-        elif choix_fournisseur not in fourn_split:
+        else:
             print("aucun fournisseur de ce nom existe.")
 
-    else:
-        break
+    # edit bill choice
+    elif choice.lower() =="edit bill":
 
+            with open(liste_fournisseur_path, "r") as f_1:
+                fourn = f_1.read()
+                fourn_split = fourn.split()
+
+            print(fourn_split)
+
+            choix_fournisseur = input("sur quel fournisseur voulez modifier une facture ?")
+
+            if choix_fournisseur in fourn_split:
+                #on recupere les factures existantes dans une variable afin de l afficher
+                cursor.execute(f"SELECT * FROM {choix_fournisseur}")
+                row = cursor.fetchall()
+                print(row)
+
+                choix_facture = input("sur quel facture voulez vous modifier (en selectionant le numero de la facture)")
+                print(type(choix_facture))
+                choix_case_a_modifier = input("quel case modifier ? (N_facture, Date, nombre_de_produits, montant_HT, montant_TTC)")
+                new_value = input("new value: ")
+                cursor.execute(f"UPDATE {choix_fournisseur} SET {choix_case_a_modifier}={new_value} WHERE N_facture='{choix_facture}'")
+                conn.commit()
+
+
+            elif choix_fournisseur not in fourn_split:
+                print("aucun fournisseur a ce nom")
+
+    #exit choice
+    elif choice.lower() == "exit":
+        print("you leave the programm")
+        is_running = False
+
+    else:
+        print(f"{choice} is not in inputs's choices")
